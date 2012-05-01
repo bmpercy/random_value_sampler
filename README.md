@@ -51,44 +51,42 @@ Or install it yourself as:
 require 'random_value_sampler'
 
 uniform
--------
 
-# generate a uniform pmf over [1,5]
-a = RandomValueSampler.new_uniform([1,2,3,4,5])
+    # generate a uniform pmf over [1,5]
+    a = RandomValueSampler.new_uniform([1,2,3,4,5])
 
-# generate a uniform pmf over some words
-a = RandomValueSampler.new_uniform(["one", "two", "buckle", "my", "shoe"])
+    # generate a uniform pmf over some words
+    a = RandomValueSampler.new_uniform(["one", "two", "buckle", "my", "shoe"])
 
-# generate a 'quantized' pmf by using duplicate entries
-a = RandomValueSampler.new_uniform([1, 2, 2, 3, 3, 3])
-a = RandomValueSampler.new_uniform(["the", "the", "a", "the", "and", "zyzzyva"])
+    # generate a 'quantized' pmf by using duplicate entries
+    a = RandomValueSampler.new_uniform([1, 2, 2, 3, 3, 3])
+    a = RandomValueSampler.new_uniform(["the", "the", "a", "the", "and", "zyzzyva"])
 
-# generate a uniform pmf over [1,5] using a Range
-a = RandomValueSampler.new_uniform(1..5)
-a = RandomValueSampler.new_uniform(1...6)
+    # generate a uniform pmf over [1,5] using a Range
+    a = RandomValueSampler.new_uniform(1..5)
+    a = RandomValueSampler.new_uniform(1...6)
 
-# generate a uniform pmf over [0,5] by specifying upper limit
-a = RandomValueSampler.new_uniform(5)
+    # generate a uniform pmf over [0,5] by specifying upper limit
+    a = RandomValueSampler.new_uniform(5)
 
 non-uniform
------------
 
-# generate a non-uniform pmf using the Hash form:
+    # generate a non-uniform pmf using the Hash form:
 
-# values are 5 and 10, with probability 0.4 and 0.6, respectively
-a = RandomValueSampler.new_non_uniform( { 5 => 20, 10 => 30 } )
+    # values are 5 and 10, with probability 0.4 and 0.6, respectively
+    a = RandomValueSampler.new_non_uniform( { 5 => 20, 10 => 30 } )
 
-# values are "probable", "possible" and "not likely" with probability
-# 0.75, 0.20 and 0.05, respectively.
-a = RandomValueSampler.new_non_uniform( { "probable" => 75,
-                            "possible" => 20, 
-                            "not likely" => 5 } )
+    # values are "probable", "possible" and "not likely" with probability
+    # 0.75, 0.20 and 0.05, respectively.
+    a = RandomValueSampler.new_non_uniform( { "probable" => 75,
+                                "possible" => 20, 
+                                "not likely" => 5 } )
 
-# generate a non-uniform pmf using the Array form (same examples as above)
-a = RandomValueSampler.new_non_uniform( [ [5,20], [10,30] )
-a = RandomValueSampler.new_non_uniform( [ ["probable",75],
-                            ["possible" => 20], 
-                            ["not likely" => 5 ] ] )
+    # generate a non-uniform pmf using the Array form (same examples as above)
+    a = RandomValueSampler.new_non_uniform( [ [5,20], [10,30] )
+    a = RandomValueSampler.new_non_uniform( [ ["probable",75],
+                                ["possible" => 20], 
+                                ["not likely" => 5 ] ] )
 
 ## Contributing
 
