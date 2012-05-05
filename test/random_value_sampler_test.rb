@@ -1,8 +1,9 @@
 require 'set'
 require 'test/unit'
-require 'random_value_sampler'
+require 'timeout'
 
-#
+require File.join(File.dirname(File.expand_path(__FILE__)), '../lib/random_value_sampler')
+
 # rough outline of this file:
 # * test cases: these just call helper methods to run tests on all of the
 #               data cases created below in the setup() method
@@ -62,84 +63,109 @@ class RandomValueSamplerTest < Test::Unit::TestCase
     assert_raises(RuntimeError) { RandomValueSampler.new_non_uniform @nonuniform_arrayoftuples_error_all_zeros }
   end
 
-  def test_uniform_exception_on_too_many_sample_unique
+  def test_uniform_sample_unique_more_than_distinct_values
     # singleton set
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_set_single_string
-      rsampler.sample_unique 2
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_set_single_string
+    samples = rsampler.sample_unique 2
+    assert_equal @uniform_set_single_string.to_a.sort, samples.to_a.sort
 
     # singleton array
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_array_single_numeric
-      rsampler.sample_unique(@uniform_array_single_numeric.length + 1)
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_array_single_numeric
+    samples = rsampler.sample_unique(@uniform_array_single_numeric.length + 1)
+    assert_equal @uniform_array_single_numeric.to_a.sort, samples.to_a.sort
 
     # singleton Range
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_range_single_exclusive
-      rsampler.sample_unique(@uniform_range_single_exclusive.to_a.length + 1)
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_range_single_exclusive
+    samples = rsampler.sample_unique(@uniform_range_single_exclusive.to_a.length + 1)
+    assert_equal @uniform_range_single_exclusive.to_a.sort, samples.to_a.sort
 
     # singleton value
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_single_zero
-      rsampler.sample_unique 2
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_single_zero
+    samples = rsampler.sample_unique 2
+    assert_equal 1, samples.size
+    assert_equal @uniform_single_zero, samples.first
 
     # size N set
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_set_10_string
-      rsampler.sample_unique(@uniform_set_10_string.length + 1)
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_set_10_string
+    samples = rsampler.sample_unique(@uniform_set_10_string.length + 1)
+    assert_equal @uniform_set_10_string.to_a.sort, samples.to_a.sort
 
     # size N array
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_array_10_numeric
-      rsampler.sample_unique(@uniform_array_10_numeric.length + 1)
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_array_10_numeric
+    samples = rsampler.sample_unique(@uniform_array_10_numeric.length + 1)
+    assert_equal @uniform_array_10_numeric.to_a.sort, samples.to_a.sort
 
     # size N Range inclusive
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_range_10_inclusive
-      rsampler.sample_unique(@uniform_range_10_inclusive.to_a.length + 1)
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_range_10_inclusive
+    samples = rsampler.sample_unique(@uniform_range_10_inclusive.to_a.length + 1)
+    assert_equal @uniform_range_10_inclusive.to_a.sort, samples.to_a.sort
 
     # size N Range exclusive
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_range_10_exclusive
-      rsampler.sample_unique(@uniform_range_10_exclusive.to_a.length + 1)
-    end
+    rsampler = RandomValueSampler.new_uniform @uniform_range_10_exclusive
+    samples = rsampler.sample_unique(@uniform_range_10_exclusive.to_a.length + 1)
+    assert_equal @uniform_range_10_exclusive.to_a.sort, samples.to_a.sort
 
-    # scalar defining Range size N
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_uniform @uniform_single_nonzero
-      rsampler.sample_unique(@uniform_single_nonzero + 2)
-    end
+    # scalar defining Range size N (samples on [0,N])
+    rsampler = RandomValueSampler.new_uniform @uniform_single_nonzero
+    samples = rsampler.sample_unique(@uniform_single_nonzero + 2)
+    assert_equal (0..@uniform_single_nonzero).to_a.sort, samples.to_a.sort
   end
 
   def test_non_uniform_exception_on_too_many_sample_unique
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_non_uniform @nonuniform_hash_single_string
-      rsampler.sample_unique 2
-    end
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_non_uniform @nonuniform_hash_10_sum_to_1
-      rsampler.sample_unique(@nonuniform_hash_10_sum_to_1.length + 1)
-    end
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_non_uniform @nonuniform_arrayoftuples_single_string
-      rsampler.sample_unique 2
-    end
-    assert_raises(RuntimeError) do 
-      rsampler = RandomValueSampler.new_non_uniform @nonuniform_arrayoftuples_10_sum_to_1
-      rsampler.sample_unique(@nonuniform_arrayoftuples_10_sum_gt_1.length + 1)
-    end
+    rsampler = RandomValueSampler.new_non_uniform @nonuniform_hash_single_string
+    samples = rsampler.sample_unique 2
+    assert_equal @nonuniform_hash_single_string.keys.map(&:to_s).sort, samples.to_a.map(&:to_s).sort
+
+    rsampler = RandomValueSampler.new_non_uniform @nonuniform_hash_10_sum_to_1
+    samples = rsampler.sample_unique(@nonuniform_hash_10_sum_to_1.length + 1)
+    assert_equal @nonuniform_hash_10_sum_to_1.keys.map(&:to_s).sort, samples.to_a.map(&:to_s).sort
+
+    rsampler = RandomValueSampler.new_non_uniform @nonuniform_arrayoftuples_single_string
+    samples = rsampler.sample_unique 2
+    assert_equal @nonuniform_arrayoftuples_single_string.map(&:first).map(&:to_s).sort, samples.to_a.map(&:to_s).sort
+
+    rsampler = RandomValueSampler.new_non_uniform @nonuniform_arrayoftuples_10_sum_to_1
+    samples = rsampler.sample_unique(@nonuniform_arrayoftuples_10_sum_gt_1.length + 1)
+    assert_equal @nonuniform_arrayoftuples_10_sum_to_1.map(&:first).map(&:to_s).sort, samples.to_a.map(&:to_s).sort
   end
 
   def test_negative_num_samples
     assert_raises(RuntimeError) { RandomValueSampler.new_uniform([1,2,3,4]).sample(-1) }
     assert_raises(RuntimeError) { RandomValueSampler.new_uniform([1,2,3,4]).sample_unique(-1) }
+  end
+
+  ##################
+  # SOME EDGE CASES
+  ##################
+
+  def test_sample_unique_on_uniform_with_duplicates_no_dupes_in_result
+    20.times do
+      rsampler = RandomValueSampler.new_uniform(@uniform_10_array_5_unique_vals)
+      samples = rsampler.sample_unique(5)
+      assert_equal samples.to_a.sort, samples.to_a.uniq.sort
+    end
+  end
+
+  def test_sample_unique_on_uniform_with_duplicates_dont_return_more_values_than_requested
+    # just in case we do some short-cutting for cases where we detect there are
+    # duplicates in the sample set
+    100.times do
+      rsampler = RandomValueSampler.new_uniform(@uniform_10_array_5_unique_vals)
+      samples = rsampler.sample_unique(4)
+      assert samples.size <= 4
+    end
+  end
+
+  def test_sample_unique_on_uniform_with_fewer_uniques_than_num_values_requested
+    rsampler = RandomValueSampler.new_uniform(@uniform_10_array_5_unique_vals)
+    assert_nothing_raised do
+      samples = nil
+      Timeout::timeout(2) do
+        samples = rsampler.sample_unique(6)
+      end
+
+      assert_equal(@uniform_10_array_5_unique_vals.sort.uniq, samples.to_a.sort)
+    end
   end
 
   ###################################################
@@ -378,29 +404,30 @@ class RandomValueSamplerTest < Test::Unit::TestCase
                                                     @uniform_single_nonzero)
   end
 
-  def test_non_uniform_sample_values_are_valid
-    assert_equal(@nonuniform_hashes.length, 4)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_single_string),
-                                                        @nonuniform_hash_single_string)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_10_sum_to_1),
-                                                        @nonuniform_hash_10_sum_to_1)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_10_sum_gt_1),
-                                                        @nonuniform_hash_10_sum_gt_1)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_10_sum_lt_1),
-                                                        @nonuniform_hash_10_sum_lt_1)
+  def test_uniform_sample_unique_values_are_valid1
+    assert_equal(@uniform_sets.length, 3)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_set_single_string)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_set_10_string)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_set_10_numeric)
 
-    assert_equal(@nonuniform_arrayoftuples.length, 4)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_single_string),
-                                                        @nonuniform_arrayoftuples_single_string)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_10_sum_to_1),
-                                                        @nonuniform_arrayoftuples_10_sum_to_1)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_10_sum_gt_1),
-                                                        @nonuniform_arrayoftuples_10_sum_gt_1)
-    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_10_sum_lt_1),
-                                                        @nonuniform_arrayoftuples_10_sum_lt_1)
+    assert_equal(@uniform_arrays.length, 3)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_array_single_numeric)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_array_10_string)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_array_10_numeric)
+
+    assert_equal(@uniform_ranges.length, 4)
+
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_range_single_exclusive)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_range_single_inclusive)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_range_10_exclusive)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_range_10_inclusive)
+
+    assert_equal(@uniform_singles.length, 2)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_single_zero)
+    verify_sample_unique_values_are_valid_for_uniform(@uniform_single_nonzero)
   end
 
-  def test_uniform_sample_values_are_valid
+  def test_uniform_sample_unique_values_are_valid2
     assert_equal(@uniform_sets.length, 3)
     verify_sample_unique_values_are_valid(RandomValueSampler.new_uniform(@uniform_set_single_string),
                                           @uniform_set_single_string)
@@ -435,7 +462,52 @@ class RandomValueSamplerTest < Test::Unit::TestCase
                                           @uniform_single_nonzero)
   end
 
+  def test_uniform_with_duplicates_no_nils_returned
+    verify_sample_values_are_valid(RandomValueSampler.new_uniform(@uniform_10_array_5_unique_vals),
+                                                                  @uniform_10_array_5_unique_vals)
+    100.times do
+      rsampler = RandomValueSampler.new_uniform(@uniform_10_array_5_unique_vals)
+      assert(!rsampler.sample_unique(3).include?(nil))
+    end
+  end
+
   def test_non_uniform_sample_values_are_valid
+    assert_equal(@nonuniform_hashes.length, 4)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_single_string),
+                                                        @nonuniform_hash_single_string)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_10_sum_to_1),
+                                                        @nonuniform_hash_10_sum_to_1)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_10_sum_gt_1),
+                                                        @nonuniform_hash_10_sum_gt_1)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_10_sum_lt_1),
+                                                        @nonuniform_hash_10_sum_lt_1)
+
+    assert_equal(@nonuniform_arrayoftuples.length, 4)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_single_string),
+                                                        @nonuniform_arrayoftuples_single_string)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_10_sum_to_1),
+                                                        @nonuniform_arrayoftuples_10_sum_to_1)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_10_sum_gt_1),
+                                                        @nonuniform_arrayoftuples_10_sum_gt_1)
+    verify_sample_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_arrayoftuples_10_sum_lt_1),
+                                                        @nonuniform_arrayoftuples_10_sum_lt_1)
+  end
+
+  def test_non_uniform_sample_unique_values_are_valid1
+    assert_equal(@nonuniform_hashes.length, 4)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_hash_single_string)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_hash_10_sum_to_1)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_hash_10_sum_gt_1)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_hash_10_sum_lt_1)
+
+    assert_equal(@nonuniform_arrayoftuples.length, 4)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_arrayoftuples_single_string)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_arrayoftuples_10_sum_to_1)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_arrayoftuples_10_sum_gt_1)
+    verify_sample_unique_values_are_valid_for_non_uniform(@nonuniform_arrayoftuples_10_sum_lt_1)
+  end
+
+  def test_non_uniform_sample_unique_values_are_valid2
     assert_equal(@nonuniform_hashes.length, 4)
     verify_sample_unique_values_are_valid(RandomValueSampler.new_non_uniform(@nonuniform_hash_single_string),
                                           @nonuniform_hash_single_string)
@@ -564,16 +636,124 @@ class RandomValueSamplerTest < Test::Unit::TestCase
 
     valid_value_set = Set.new(vals_and_probs.keys)
 
+    # one sample
     (1..1000).each do
       sample = rsampler.sample
       assert(valid_value_set.include?(sample),
-             "<#{sample}> is not a valid sample in raw values: <#{values}>")
+             "<#{sample.nil? ? 'nil' : sample}> is not a valid sample in raw values: <#{values}>")
     end
 
+    # two samples
+    (1..1000).each do
+      rsampler.sample(2).each do |s|
+        assert(valid_value_set.include?(s),
+               "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+      end
+    end
+
+    # ten samples
     (1..1000).each do
       rsampler.sample(10).each do |s|
         assert(valid_value_set.include?(s),
-               "<#{s}> is not a valid multi-sample in raw values: <#{values}>")
+               "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+      end
+    end
+
+    # N-1 samples
+    unless rsampler.num_values <= 1
+      (1..1000).each do
+        rsampler.sample([rsampler.num_values - 1, 1].max).each do |s|
+          assert(valid_value_set.include?(s),
+                 "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+        end
+      end
+    end
+  end
+
+  def verify_sample_unique_values_are_valid_for_uniform(values)
+    vals_and_probs = extract_hash_of_vals_and_probs(values)
+    vals_and_probs.delete_if { |val, prob| prob == 0 }
+
+    valid_value_set = Set.new(vals_and_probs.keys)
+
+    # one sample
+    (1..1000).each do
+      rsampler = RandomValueSampler.new_uniform(values)
+      sample = rsampler.sample_unique
+      assert(valid_value_set.include?(sample),
+             "<#{sample.nil? ? 'nil' : sample}> is not a valid sample in raw values: <#{values}>")
+    end
+
+    # two samples
+    (1..1000).each do
+      rsampler = RandomValueSampler.new_uniform(values)
+      rsampler.sample_unique(2).each do |s|
+        assert(valid_value_set.include?(s),
+               "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+      end
+    end
+
+    # ten samples
+    (1..1000).each do
+      rsampler = RandomValueSampler.new_uniform(values)
+      rsampler.sample_unique(10).each do |s|
+        assert(valid_value_set.include?(s),
+               "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+      end
+    end
+
+    # N-1 samples
+    if (values.is_a?(Array) || values.is_a?(Range)) && (values.to_a.size > 1)
+      (1..1000).each do
+        rsampler = RandomValueSampler.new_uniform(values)
+        rsampler.sample_unique([rsampler.num_values - 1, 1].max).each do |s|
+          assert(valid_value_set.include?(s),
+                 "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+        end
+      end
+    end
+  end
+
+  def verify_sample_unique_values_are_valid_for_non_uniform(values)
+    vals_and_probs = extract_hash_of_vals_and_probs(values)
+    vals_and_probs.delete_if { |val, prob| prob == 0 }
+
+    valid_value_set = Set.new(vals_and_probs.keys)
+
+    # one sample
+    (1..1000).each do
+      rsampler = RandomValueSampler.new_non_uniform(values)
+      sample = rsampler.sample_unique
+      assert(valid_value_set.include?(sample),
+             "<#{sample.nil? ? 'nil' : sample}> is not a valid sample in raw values: <#{values}>")
+    end
+
+    # two samples
+    (1..1000).each do
+      rsampler = RandomValueSampler.new_non_uniform(values)
+      rsampler.sample_unique(2).each do |s|
+        assert(valid_value_set.include?(s),
+               "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+      end
+    end
+
+    # ten samples
+    (1..1000).each do
+      rsampler = RandomValueSampler.new_non_uniform(values)
+      rsampler.sample_unique(10).each do |s|
+        assert(valid_value_set.include?(s),
+               "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+      end
+    end
+
+    # N-1 samples
+    unless values.size <= 1
+      (1..1000).each do
+        rsampler = RandomValueSampler.new_non_uniform(values)
+        rsampler.sample_unique([rsampler.num_values - 1, 1].max).each do |s|
+          assert(valid_value_set.include?(s),
+                 "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values}>")
+        end
       end
     end
   end
@@ -594,7 +774,7 @@ class RandomValueSamplerTest < Test::Unit::TestCase
 
       sample = test_rsampler.sample_unique
       assert(valid_value_set.include?(sample),
-             "<#{sample}> is not a valid sample in raw values: <#{values.inspect}>")
+             "<#{sample.nil? ? 'nil' : sample}> is not a valid sample in raw values: <#{values.inspect}>")
     end
 
     (1..1000).each do
@@ -603,12 +783,12 @@ class RandomValueSamplerTest < Test::Unit::TestCase
       if num_multi_samples > 1
         test_rsampler.sample_unique(num_multi_samples).each do |s|
           assert(valid_value_set.include?(s),
-                 "<#{s}> is not a valid multi-sample in raw values: <#{values.inspect}>")
+                 "<#{s.nil? ? 'nil' : s }> is not a valid multi-sample in raw values: <#{values.inspect}>")
         end
       else
         sample = test_rsampler.sample_unique(num_multi_samples)
         assert(valid_value_set.include?(sample),
-               "<#{sample}> is not a valid multi-sample in raw values: <#{values.inspect}>")
+               "<#{sample.nil? ? 'nil' : sample}> is not a valid multi-sample in raw values: <#{values.inspect}>")
       end
     end
   end
@@ -813,6 +993,8 @@ class RandomValueSamplerTest < Test::Unit::TestCase
                         @uniform_single_zero,
                         @uniform_single_nonzero
                        ]
+
+    @uniform_10_array_5_unique_vals = [1,1,1,1,1,2,3,4,5,6]
 
     # error inputs
 

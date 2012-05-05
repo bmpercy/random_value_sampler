@@ -1,0 +1,8 @@
+0.1.4:
+----------------
+* fixing bug if we get a uniform distribution with duplicates and try to sample_unique for number
+  of samples that's between # of distinct values and total # of values (had infinite loop :( )
+* changed behavior when requesting to sample_unique with larger number than the total number
+  of values in a distribution. instead of raising exception, just return unique set of all the
+  valid values. this shouldn't break any existing implementations unless someone was depending
+  on the exceptions being raised (that would be bad form).

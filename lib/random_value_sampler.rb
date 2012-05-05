@@ -147,25 +147,26 @@ class RandomValueSampler
   def sample_unique(n = 1)
     raise "n must be 0 or greater to sample_unique" if n < 0
 
-    # take care of edge cases: where they ask for more samples than there are
-    # entries in the distribution (error)
-    if n > pmf.num_values
-      raise("Invalid request to pull #{n} unique samples from a distribution " +
-            "with only #{pmf.num_values} distinct values")
-    end
+    samples = nil
 
-    # use a set in case the calling code added multiple copies of the same
-    # object into distribution
-    samples = Set.new
-    while samples.length < n
-      if pmf.respond_to?(:sample_from_distribution_and_remove)
-        samples << pmf.sample_from_distribution_and_remove
-      else
-        samples << pmf.sample_from_distribution
+    # take care of edge cases: where they ask for more samples than there are
+    # entries in the distribution
+    if n > pmf.num_values
+      samples = pmf.all_values.uniq
+    else
+      # use a set in case the calling code added multiple copies of the same
+      # object into distribution
+      samples = Set.new
+      while samples.length < n && pmf.num_values > 0
+        if pmf.respond_to?(:sample_from_distribution_and_remove)
+          samples << pmf.sample_from_distribution_and_remove
+        else
+          samples << pmf.sample_from_distribution
+        end
       end
     end
 
-    return samples.length == 1 ? samples.first : samples.to_a
+    return (n == 1 && samples.size == 1) ? samples.first : samples.to_a
   end
 
 
@@ -271,7 +272,7 @@ class RandomValueSampler
       end
 
       @values.delete(sample)
-      @num_values -= 1
+      @num_values = @values.length
       @probability = nil # force recalculation of probability next time
 
       return sample
